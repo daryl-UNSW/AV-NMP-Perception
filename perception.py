@@ -15,9 +15,6 @@ def load_points(path, vox_size=0.2):
     now = timeit.default_timer()
     print('Downsampling time: ', now - start)
 
-    # Cropping
-    cl, ind = pcd.remove_statistical_outlier(nb_neighbors=100, std_ratio=0.3)
-    pcd = cl.select_by_index(ind)
 
     # bounding_polygon = np.array([
     # #Vertics Polygon 1
@@ -25,7 +22,7 @@ def load_points(path, vox_size=0.2):
     #         [485.114990234375, 612.208984375, 286.5320129394531],
     #         [485.114990234375, 605.0880126953125, 286.5320129394531],
     #         [488.8989868164062, 605.0880126953125, 286.5320129394531],
-    # #Vertics Polygon2
+    # #Vertics Polygon 2
     #         [488.89898681640625, 612.208984375, 291.6619873046875], 
     #         [485.114990234375, 612.208984375, 291.6619873046875], 
     #         [485.114990234375, 605.0880126953125, 291.6619873046875],
@@ -42,9 +39,9 @@ def load_points(path, vox_size=0.2):
 
 
     # Segmentation
-    plane_model, inliers = pcd.segment_plane(distance_threshold=0.2,
-                                         ransac_n=30,
-                                         num_iterations=2000)
+    plane_model, inliers = pcd.segment_plane(distance_threshold=0.4,
+                                         ransac_n=3,
+                                         num_iterations=1500)
     [a, b, c, d] = plane_model
     print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
 
@@ -55,11 +52,15 @@ def load_points(path, vox_size=0.2):
     print('Segmentation time: ', timeit.default_timer() - now)
     now = timeit.default_timer()
 
+    # Outlier Removal
+    cl, ind = pcd.remove_statistical_outlier(nb_neighbors=200, std_ratio=0.1)
+    pcd = cl.select_by_index(ind)
+
     # Clustering
     with o3d.utility.VerbosityContextManager(
             o3d.utility.VerbosityLevel.Debug) as cm:
         labels = np.array(
-            pcd.cluster_dbscan(eps=1.2, min_points=3))
+            pcd.cluster_dbscan(eps=1.5, min_points=3))
 
     max_label = labels.max()
     print(f"point cloud has {max_label + 1} clusters")
@@ -72,10 +73,14 @@ def load_points(path, vox_size=0.2):
 
     o3d.visualization.draw_geometries([pcd])
 
-# file_num = len(os.listdir(PATH))
-# for i in range(0, file_num):
-#     # Read file
-#     f = PATH + str(i).zfill(10) + '.pcd'
 
-# Visualise the PCD file
-load_points(PATH + '0000000007.pcd')
+# cycle through files
+file_num = len(os.listdir(PATH))
+for i in range(0, file_num):
+    # Read file
+    f = PATH + str(i).zfill(10) + '.pcd'
+    load_points(f)
+
+# # Load individual file
+# load_points(PATH + '0000000018.pcd')
+# load_points(PATH + '0000000001.pcd')
